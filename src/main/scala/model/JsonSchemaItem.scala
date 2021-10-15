@@ -7,20 +7,44 @@ case class Swagger(definitions:Map[String,JsonSchemaItem])
 
 object Swagger{
 
-  implicit val decodeFoo: Decoder[Either[String,Seq[String]]] = new Decoder[Either[String,Seq[String]]] {
-    final def apply(c: HCursor): Decoder.Result[Either[String,Seq[String]]] =
+//  implicit val decodeFoo: Decoder[Either[String,Seq[String]]] = new Decoder[Either[String,Seq[String]]] {
+//    final def apply(c: HCursor): Decoder.Result[Either[String,Seq[String]]] =
+//
+//      c.as[String] match {
+//        case Left(value) => {
+//          println(s"Unable to decodeString for $c $value")
+//          c.as[Seq[String]] match {
+//            case Left(value) => Left(value)
+//            case Right(value) => Right(Right(value))
+//          }
+//        }
+//        case Right(value) => Right(Left(value))
+//      }
+//
+//
+//  }
 
-      c.as[String].toOption.map{ str => Left(str)}.orElse{ c.as[Seq[String]].toOption.map(seq => Right(seq))} match {
-        case Some(s) => Right(s)
-        case None => Left(DecodingFailure("Either error",List()))
-      }
+  implicit def h[A,B](implicit a: Decoder[String], b: Decoder[Seq[String]]): Decoder[Either[String,Seq[String]]] = {
+    val l: Decoder[Either[String,Seq[String]]]= a.map(Left.apply)
+    val r: Decoder[Either[String,Seq[String]]]= b.map(Right.apply)
+    l or r
   }
 
   def parse(str:String):Option[Swagger] = {
-    decode[Swagger](str).fold({ err =>
-      println(err)
-      None
-    },Some(_))
+    io.circe.parser.parse(str) match {
+      case Left(value) => {
+        println(value)
+        None
+      }
+      case Right(value) => value.deepDropNullValues.as[Swagger] match {
+        case Left(value) => {
+          println(value)
+          None
+        }
+        case Right(value) => Some(value)
+      }
+    }
+
   }
 }
 
@@ -28,12 +52,12 @@ object Swagger{
 
 case class JsonSchemaItem(`type`:Option[Either[String,Seq[String]]],properties: Option[Map[String,JsonSchemaItem]],items: Option[JsonSchemaItem],`$ref`:Option[String]) {
   def ref = `$ref`.flatMap(_.split("/").lastOption)
-  def typ:Option[String] = `type`.map {
+  def typ:String = `type`.flatMap {
     _ match {
-      case Left(s) => s
-      case Right(s) => s.headOption.getOrElse(JsonSchemaItem.Types.OBJECT)
+      case Left(s) => Some(s)
+      case Right(s) => s.headOption
     }
-  }
+  }.getOrElse(JsonSchemaItem.Types.OBJECT)
 }
 
 object JsonSchemaItem{

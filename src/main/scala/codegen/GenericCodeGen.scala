@@ -4,7 +4,7 @@ import model.JsonSchemaItem
 trait GenericCodeGen extends CodeGen {
   override def generate(title:String,jsonSchema: JsonSchemaItem): String = {
     if(jsonSchema.ref.isDefined) obj(title,jsonSchema.ref.get) else {
-      jsonSchema.typ.get match {
+      jsonSchema.typ match {
         case JsonSchemaItem.Types.ARRAY => arr(title,jsonSchema.items.get)
         case JsonSchemaItem.Types.BOOLEAN => bool(title)
         case JsonSchemaItem.Types.INTEGER => int(title)

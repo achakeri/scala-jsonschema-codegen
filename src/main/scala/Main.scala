@@ -6,7 +6,10 @@ import model.Swagger
 import scala.io.Source
 
 object Main extends App {
-  val swagger = Source.fromFile(args(0)).getLines.mkString(" ")
+
+  println(args.toSeq)
+
+  val swagger = Source.fromFile(args(0)).getLines.mkString("\n")
 
   val cpp = CppRapidJson("configuration",false)
 
@@ -22,6 +25,7 @@ object Main extends App {
         |
         |#include <vector>
         |#include <string>
+        |#include <memory>
         |
         |#include "rapidjson/document.h"
         |#include "rapidjson/writer.h"
